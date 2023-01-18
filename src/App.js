@@ -12,6 +12,16 @@ const EXISTE = gql`
         }
     }
 `;
+
+const MENSAGENS_AMBIENTE = gql`
+    query MensagensAmbiente($ambiente: ID!) {
+        mensagensPorAmbiente(ambiente: $ambiente) {
+            id
+            texto
+            data
+        }
+    }
+`;
 const REGISTRAR_ENTRADA = gql`
     mutation RegistrarEntrada($usuario: ID!, $ambiente: ID!) {
         registrarEntrada(usuario: $usuario, ambiente: $ambiente) {
@@ -27,10 +37,24 @@ const App = () => {
     const [senha, setSenha] = useState("");
     const [usuarioAtivo, setUsuarioAtivo] = useState({});
 
+    const [isLoading, setIsLoading] = useState(false);
+    const [mensagens, setMensagens] = useState([]);
+
+    const getMensagens = async () => {
+        const { data } = await client.query({
+            query: MENSAGENS_AMBIENTE,
+            variables: {
+                ambiente,
+            },
+        });
+        const { mensagensPorAmbiente } = data;
+        console.log(mensagensPorAmbiente);
+        setMensagens([...mensagensPorAmbiente]);
+    };
+
     const fazerLogin = async () => {
         try {
-            console.log(nome);
-            console.log(senha);
+            setIsLoading(true);
             const result = await client.query({
                 query: EXISTE,
                 variables: {
@@ -50,6 +74,8 @@ const App = () => {
                 variables: { usuario: id, ambiente },
             });
             console.log(participacao);
+            setIsLoading(false);
+            getMensagens();
         } catch (e) {
             console.log(e);
         }
@@ -90,6 +116,32 @@ const App = () => {
                     >
                         OK
                     </button>
+                </div>
+            </div>
+            <div className="row">
+                <div className="card">
+                    <h5 className="text-center">
+                        Usuário ativo: {usuarioAtivo?.nome}
+                    </h5>
+                </div>
+            </div>
+            <div className="row">
+                {isLoading ? (
+                    <div className="d-flex justify-content-center p-3">
+                        <div className="spinner-border" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                ) : null}
+                <div className="col-8 offset-2">
+                    {mensagens.length
+                        ? mensagens.map((m) => (
+                              <div className="card">
+                                  <div className="card-header">{m.data}</div>
+                                  <div className="card-body">{m.texto}</div>
+                              </div>
+                          ))
+                        : null}
                 </div>
             </div>
         </div>
