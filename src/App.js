@@ -30,6 +30,18 @@ const REGISTRAR_ENTRADA = gql`
         }
     }
 `;
+const REGISTRAR_MENSAGEM = gql`
+    mutation RegistrarMensagem($usuario: ID!, $ambiente: ID!, $texto: String!) {
+        registrarMensagem(
+            usuario: $usuario
+            ambiente: $ambiente
+            texto: $texto
+        ) {
+            id
+            texto
+        }
+    }
+`;
 
 const App = () => {
     const client = useApolloClient();
@@ -39,6 +51,7 @@ const App = () => {
 
     const [isLoading, setIsLoading] = useState(false);
     const [mensagens, setMensagens] = useState([]);
+    const [mensagem, setMensagem] = useState("");
 
     const getMensagens = async () => {
         const { data } = await client.query({
@@ -76,6 +89,23 @@ const App = () => {
             console.log(participacao);
             setIsLoading(false);
             getMensagens();
+        } catch (e) {
+            console.log(e);
+        }
+    };
+
+    const enviarMensagem = async () => {
+        try {
+            const result = await client.mutate({
+                mutation: REGISTRAR_MENSAGEM,
+                variables: {
+                    usuario: usuarioAtivo.id,
+                    ambiente,
+                    texto: mensagem,
+                },
+            });
+            console.log(result);
+            setMensagem("");
         } catch (e) {
             console.log(e);
         }
@@ -119,12 +149,35 @@ const App = () => {
                 </div>
             </div>
             <div className="row">
-                <div className="card">
-                    <h5 className="text-center">
-                        Usuário ativo: {usuarioAtivo?.nome}
-                    </h5>
-                </div>
+                <h5 className="text-center">
+                    Usuário ativo: {usuarioAtivo?.nome}
+                </h5>
             </div>
+            {usuarioAtivo?.id ? (
+                <div className="row">
+                    <div className="col-12">
+                        <div className="form-floating my-3">
+                            <input
+                                type="text"
+                                className="form-control"
+                                id="mensagemInput"
+                                name="mensagemInput"
+                                placeholder="Mensagem"
+                                value={mensagem}
+                                onChange={(e) => setMensagem(e.target.value)}
+                            />
+                            <label htmlFor="mensagemInput">Mensagem</label>
+                            <button
+                                className="btn btn-outline-secondary w-100 my-2"
+                                onClick={enviarMensagem}
+                            >
+                                Enviar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+
             <div className="row">
                 {isLoading ? (
                     <div className="d-flex justify-content-center p-3">
@@ -134,7 +187,7 @@ const App = () => {
                     </div>
                 ) : null}
                 <div className="col-8 offset-2">
-                    {mensagens.length
+                    {mensagens.length > 0
                         ? mensagens.map((m) => (
                               <div className="card">
                                   <div className="card-header">{m.data}</div>
